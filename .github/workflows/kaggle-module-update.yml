@@ -1,0 +1,58 @@
+# name: Update Kaggle Module Dataset
+
+# on:
+#   push:
+#     branches: [main]
+#     paths:
+#       - 'deep_past/**'
+#   workflow_dispatch:
+
+# jobs:
+#   update-module:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+
+#       - uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.11'
+
+#       - run: pip install kaggle
+
+#       - name: Prepare dataset files
+#         run: |
+#           mkdir -p kaggle-dataset
+#           cp -r deep_past kaggle-dataset/
+
+#           # ダミーディレクトリ追加（tar展開時のフラット化防止）
+#           mkdir -p kaggle-dataset/test
+#           echo "Dummy file to preserve directory structure in Kaggle dataset." > kaggle-dataset/test/test.txt
+
+#           echo "Dataset directory structure:"
+#           ls -la kaggle-dataset/
+
+#       - name: Create dataset metadata
+#         run: |
+#           cat > kaggle-dataset/dataset-metadata.json << 'EOF'
+#           {
+#             "title": "Deep Past 2026 Module",
+#             "id": "${{ secrets.KAGGLE_USERNAME }}/deep-past-2026-module",
+#             "licenses": [{"name": "CC0-1.0"}]
+#           }
+#           EOF
+
+#       - name: Upload to Kaggle
+#         env:
+#           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+#           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+#         run: |
+#           mkdir -p ~/.kaggle
+#           echo '{"username":"'"${KAGGLE_USERNAME}"'","key":"'"${KAGGLE_KEY}"'"}' > ~/.kaggle/kaggle.json
+#           chmod 600 ~/.kaggle/kaggle.json
+#           cd kaggle-dataset
+#           COMMIT_MSG=$(git log -1 --pretty=%B | head -n 1)
+#           if kaggle datasets list -s "deep-past-2026-module" --user "${KAGGLE_USERNAME}" | grep -q "deep-past-2026-module"; then
+#             kaggle datasets version -p . -m "Auto-update: ${COMMIT_MSG}" --dir-mode tar
+#           else
+#             kaggle datasets create -p . --dir-mode tar
+#           fi
